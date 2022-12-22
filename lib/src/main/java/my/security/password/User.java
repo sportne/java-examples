@@ -1,4 +1,4 @@
-package java.security.password;
+package my.security.password;
 
 public class User {
 
@@ -24,12 +24,11 @@ public class User {
 	 * @param password the String password to check.
 	 * @return true if the password was correct and false otherwise.
 	 */
-	public boolean authenticate(String password) {
+	public boolean authenticate(char[] password) {
 		return passData.authenticate(password);
 	}
 
 	/**
-	 *
 	 * @return the unique ID of this User.
 	 */
 	public long getId() {
@@ -37,7 +36,6 @@ public class User {
 	}
 
 	/**
-	 *
 	 * @return the username for this user.
 	 */
 	public String getUsername() {

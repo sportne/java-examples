@@ -1,4 +1,4 @@
-package java.security.password;
+package my.security.password;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -59,8 +59,8 @@ public class PasswordData {
 		this.passwordSalt = passwordSalt;
 	}
 
-	public boolean authenticate(String password) {
-		return Arrays.equals(passwordHash, generateHash(password.toCharArray(), passwordSalt));
+	public boolean authenticate(char[] password) {
+		return Arrays.equals(passwordHash, generateHash(password, passwordSalt));
 	}
 
 }

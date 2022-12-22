@@ -1,4 +1,4 @@
-package java.security.password;
+package my.security.password;
 
 public class UserFactory {
 
