@@ -3,6 +3,8 @@ package my.security.encrypt;
 import java.security.Provider;
 import java.security.Security;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 public class SecurityInfo {
 
 	public static void listProvidersAndProperties() {
@@ -30,6 +32,8 @@ public class SecurityInfo {
 	}
 
 	public static void main(String[] args) {
+		Security.addProvider(new BouncyCastleProvider());
+
 		listProvidersAndProperties();
 		System.out.println("");
 		listAlgorithms();
