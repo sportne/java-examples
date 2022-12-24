@@ -1,14 +1,17 @@
 package my.security.tls;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.security.KeyPair;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -18,24 +21,38 @@ import javax.net.ssl.TrustManagerFactory;
 
 import com.google.common.base.Charsets;
 
-public class TlsExample {
+import my.security.encrypt.AsymmetricEncryptionBytes;
 
-	private static final String KEYSTORE_TYPE = "JKS";
+public class TlsExample {
 
 	private static final String TLS_PROTOCOL = "TLSv1.3";
 	private static final String TLS_CIPHER = "TLS_AES_128_GCM_SHA256";
+	private static final String KEYSTORE_TYPE = "PKCS12";
+	private static final String SIGNATURE_ALG = "SHA256WithRSA";
+	private static final String KEY_ALGORITHM = "RSA";
 
 	private static final String HOSTNAME = "localhost";
-	private static final int PORT = 8000;
 
 	private static SSLContext sslContext;
 	private static SSLSocketFactory sslSocketFactory;
-	
+
 	private static final Charset ENCRYPTION_CHAR_SET = Charsets.UTF_8;
 
 	public static void closeSocket(SSLSocket socket) throws IOException {
 		// Close the SSL socket
 		socket.close();
+	}
+
+	public static KeyStore createKeyStore(KeyPair keyPair, Certificate certificate,
+			File keyStoreFile, char[] keyStorePassword)
+			throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+		KeyStoreExample.createEmptyKeyStoreFile(KEYSTORE_TYPE, keyStoreFile, keyStorePassword);
+		KeyStore keyStore = KeyStoreExample.loadKeyStore(KEYSTORE_TYPE, keyStoreFile,
+				keyStorePassword);
+
+		KeyStoreExample.storeKey(keyPair, certificate, keyStore, keyStorePassword, keyStoreFile);
+
+		return keyStore;
 	}
 
 	public static SSLSocket createSocket(String host, int port) throws IOException {
@@ -52,22 +69,39 @@ public class TlsExample {
 		return sslSocket;
 	}
 
-	public static void init(String clientKeyStoreFile, char[] clientKeyStorePassword,
-			String clientKeyPassword, String trustStoreFile, char[] trustStorePassword)
-			throws Exception {
-		// Load the keystore containing the client's private key and certificate
-		KeyStore clientKeyStore = KeyStore.getInstance(KEYSTORE_TYPE);
-		System.out.println(new File(clientKeyStoreFile).getAbsolutePath());
-		clientKeyStore.load(new FileInputStream(clientKeyStoreFile), clientKeyStorePassword);
+	public static KeyStore createTrustStore(Certificate certificate, File trustStoreFile,
+			char[] trustStorePassword)
+			throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+		KeyStoreExample.createEmptyKeyStoreFile(KEYSTORE_TYPE, trustStoreFile, trustStorePassword);
+		KeyStore trustStore = KeyStoreExample.loadKeyStore(KEYSTORE_TYPE, trustStoreFile,
+				trustStorePassword);
+
+		trustStore.load(null, null);
+		trustStore.setCertificateEntry("server", certificate);
+
+		return trustStore;
+	}
+
+	public static void init(File keyStoreFile, char[] keyStorePassword, File trustStoreFile,
+			char[] trustStorePassword) throws Exception {
+
+		// create some keys and certificates to use
+		KeyPair keyPair = AsymmetricEncryptionBytes.generateKeyPair(KEY_ALGORITHM);
+		Certificate certificate = KeyStoreExample.createSelfSignedCertificate(SIGNATURE_ALG,
+				keyPair);
+
+		// create a key store to use
+		KeyStore keyStore = createKeyStore(keyPair, certificate, keyStoreFile, keyStorePassword);
+		System.out.println(keyStoreFile.getAbsolutePath());
 
 		// Create a key manager factory to use the client's private key and certificate
 		KeyManagerFactory kmf = KeyManagerFactory
 				.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-		kmf.init(clientKeyStore, clientKeyPassword.toCharArray());
+		kmf.init(keyStore, keyStorePassword);
 
-		// Load the truststore containing the server's public certificate
-		KeyStore trustStore = KeyStore.getInstance(KEYSTORE_TYPE);
-		trustStore.load(new FileInputStream(trustStoreFile), trustStorePassword);
+		// Create a trust store for the certificates
+		KeyStore trustStore = createTrustStore(certificate, trustStoreFile, trustStorePassword);
+		System.out.println(trustStoreFile.getAbsolutePath());
 
 		// Create a trust manager factory to use the server's public certificate
 		TrustManagerFactory tmf = TrustManagerFactory
@@ -95,29 +129,46 @@ public class TlsExample {
 	 * @throws Exception general thrown exception
 	 */
 	public static void main(String[] args) throws Exception {
+
+		File keyStoreFile = new File("keystore.pkcs");
+		File trustStoreFile = new File("truststore.pkcs");
+
 		// Initialize the SSL context and socket factory
-		init("client.jks", "clientpwd".toCharArray(), "clientpwd", "server.jks",
-				"serverpwd".toCharArray());
+		init(keyStoreFile, "keyPwd".toCharArray(), trustStoreFile, "trustPwd".toCharArray());
 
-		// Create an SSL socket to connect to the server
-		SSLSocket sslSocket = createSocket(HOSTNAME, PORT);
+		try (TlsEchoServer server = TlsEchoServer.create(0, sslContext,
+				new String[] { TLS_PROTOCOL }, new String[] { TLS_CIPHER })) {
+			new Thread(server).start();
+			Thread.sleep(1000);
 
-		// Send a message to the server
-		sendMessage(sslSocket, "Hello, Server!");
+			// Create an SSL socket to connect to the server
+			SSLSocket sslSocketOnClient = createSocket(HOSTNAME, server.port());
 
-		// Receive a message from the server
-		String message = receiveMessage(sslSocket);
-		System.out.println("Received from server: " + message);
+			// Send a message to the server
+			sendMessage(sslSocketOnClient, "Hello, Server!");
 
-		// Close the SSL socket
-		closeSocket(sslSocket);
+			// Receive a message from the server
+			String message = receiveMessage(sslSocketOnClient);
+			System.out.println(message);
+
+			// Close the SSL socket
+			closeSocket(sslSocketOnClient);
+
+			keyStoreFile.delete();
+			trustStoreFile.delete();
+		}
 	}
 
 	public static String receiveMessage(SSLSocket socket) throws IOException {
 		// Receive a message from the server
-		InputStream inputStream = socket.getInputStream();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-		String message = reader.readLine();
+		InputStream inputStream = new BufferedInputStream(socket.getInputStream());
+		byte[] data = new byte[2048];
+		int len = inputStream.read(data);
+		if (len <= 0) {
+			throw new IOException("no data received");
+		}
+		System.out.printf("client received %d bytes: ", len);
+		String message = new String(data, 0, data.length);
 		return message;
 	}
 
@@ -126,69 +177,6 @@ public class TlsExample {
 		OutputStream outputStream = socket.getOutputStream();
 		outputStream.write(message.getBytes(ENCRYPTION_CHAR_SET));
 		outputStream.flush();
-	}
-
-	/**
-	 * This code loads the client's private key and certificate from a keystore
-	 * file, and the server's public certificate from a truststore file. It then
-	 * initializes an SSL context and creates an SSL socket factory using these
-	 * certificates. Finally, it creates an SSL socket and establishes a secure
-	 * connection to the server using the TLS 1.3 protocol and the AES 128 GCM
-	 * cipher suite. After the handshake is completed, the client can send a message
-	 * to the server and receive a response.
-	 *
-	 * @param args unused arguments
-	 * @throws Exception a generic throwing of exceptions
-	 */
-	public static void singleMethod(String[] args) throws Exception {
-		// Load the keystore containing the client's private key and certificate
-		KeyStore clientKeyStore = KeyStore.getInstance(KEYSTORE_TYPE);
-		clientKeyStore.load(new FileInputStream("client.jks"), "clientpwd".toCharArray());
-
-		// Create a key manager factory to use the client's private key and certificate
-		KeyManagerFactory kmf = KeyManagerFactory
-				.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-		kmf.init(clientKeyStore, "clientpwd".toCharArray());
-
-		// Load the truststore containing the server's public certificate
-		KeyStore trustStore = KeyStore.getInstance(KEYSTORE_TYPE);
-		trustStore.load(new FileInputStream("server.jks"), "serverpwd".toCharArray());
-
-		// Create a trust manager factory to use the server's public certificate
-		TrustManagerFactory tmf = TrustManagerFactory
-				.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-		tmf.init(trustStore);
-
-		// Initialize SSL context
-		SSLContext sslContext = SSLContext.getInstance(TLS_PROTOCOL);
-		sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-
-		// Create an SSL socket factory
-		SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-		// Create an SSL socket to connect to the server
-		SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(HOSTNAME, PORT);
-
-		// Set the enabled TLS protocols and cipher suites
-		sslSocket.setEnabledProtocols(new String[] { TLS_PROTOCOL });
-		sslSocket.setEnabledCipherSuites(new String[] { TLS_CIPHER });
-
-		// Start the handshake
-		sslSocket.startHandshake();
-
-		// Send a message to the server
-		OutputStream outputStream = sslSocket.getOutputStream();
-		outputStream.write("Hello, Server!".getBytes(ENCRYPTION_CHAR_SET));
-		outputStream.flush();
-
-		// Receive a message from the server
-		InputStream inputStream = sslSocket.getInputStream();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-		String message = reader.readLine();
-		System.out.println("Received from server: " + message);
-
-		// Close the SSL socket
-		sslSocket.close();
 	}
 
 }

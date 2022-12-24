@@ -1,26 +1,49 @@
 package my.security.tls;
 
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.security.KeyPair;
 import java.security.KeyStore;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.security.cert.Certificate;
+import java.util.Arrays;
+
+import my.security.encrypt.AsymmetricEncryptionBytes;
 
 public class TrustStoreExample {
 	public static void main(String[] args) throws Exception {
-		// Load the server's public certificate
-		CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-		FileInputStream certificateInputStream = new FileInputStream("server.crt");
-		X509Certificate certificate = (X509Certificate) certificateFactory
-				.generateCertificate(certificateInputStream);
-		certificateInputStream.close();
+
+		KeyPair keyPair = AsymmetricEncryptionBytes.generateKeyPair();
+		Certificate certificate = KeyStoreExample.createSelfSignedCertificate(keyPair);
 
 		// Create a truststore and add the server's public certificate
-		KeyStore trustStore = KeyStore.getInstance("JKS");
+		File trustStoreFile = new File("truststore.pkcs");
+		char[] trustStorePassword = "here's a password".toCharArray();
+		KeyStoreExample.createEmptyKeyStoreFile(trustStoreFile, trustStorePassword);
+		KeyStore trustStore = KeyStoreExample.loadKeyStore(trustStoreFile, trustStorePassword);
+
 		trustStore.load(null, null);
 		trustStore.setCertificateEntry("server", certificate);
 
 		// Write the truststore to a file
-		trustStore.store(new FileOutputStream("truststore.jks"), "storepwd".toCharArray());
+		try (FileOutputStream fos = new FileOutputStream(trustStoreFile)) {
+			trustStore.store(fos, trustStorePassword);
+		}
+
+		System.out.println("Wrote a trust store holding " + trustStore.size() + " certificates");
+
+		KeyStore loadedTrustStore = KeyStoreExample.loadKeyStore(trustStoreFile,
+				trustStorePassword);
+		System.out.println(
+				"Loaded a trust store holding " + loadedTrustStore.size() + " certificates");
+
+		Certificate loadedCert = loadedTrustStore.getCertificate("server");
+
+		if (Arrays.equals(loadedCert.getEncoded(), certificate.getEncoded())) {
+			System.out.println("Loaded certificate does equal the created certificate!");
+		} else {
+			System.out.println("Loaded certificate does NOT equal the created certificate!");
+		}
+
+		trustStoreFile.delete();
 	}
 }

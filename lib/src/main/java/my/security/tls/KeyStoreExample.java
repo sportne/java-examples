@@ -40,7 +40,13 @@ public class KeyStoreExample {
 
 	public static void createEmptyKeyStoreFile(File newKeyStoreFile, char[] keystorePassword)
 			throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
-		KeyStore ks = KeyStore.getInstance(KEYSTORE_TYPE);
+		createEmptyKeyStoreFile(KEYSTORE_TYPE, newKeyStoreFile, keystorePassword);
+	}
+
+	public static void createEmptyKeyStoreFile(String keystoreType, File newKeyStoreFile,
+			char[] keystorePassword)
+			throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+		KeyStore ks = KeyStore.getInstance(keystoreType);
 		ks.load(null, keystorePassword);
 
 		// Store away the keystore.
@@ -52,7 +58,13 @@ public class KeyStoreExample {
 	public static KeyStore loadKeyStore(File keyStoreFile, char[] keystorePassword)
 			throws KeyStoreException, FileNotFoundException, IOException, NoSuchAlgorithmException,
 			CertificateException {
-		KeyStore ks = KeyStore.getInstance(KEYSTORE_TYPE);
+		return loadKeyStore(KEYSTORE_TYPE, keyStoreFile, keystorePassword);
+	}
+
+	public static KeyStore loadKeyStore(String keystoreType, File keyStoreFile,
+			char[] keystorePassword) throws KeyStoreException, FileNotFoundException, IOException,
+			NoSuchAlgorithmException, CertificateException {
+		KeyStore ks = KeyStore.getInstance(keystoreType);
 
 		try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
 			ks.load(fis, keystorePassword);
@@ -62,6 +74,11 @@ public class KeyStoreExample {
 	}
 
 	public static Certificate createSelfSignedCertificate(KeyPair keyPair)
+			throws OperatorCreationException, CertificateException {
+		return createSelfSignedCertificate(SIGNATURE_ALG, keyPair);
+	}
+	
+	public static Certificate createSelfSignedCertificate(String signatureAlgorithm, KeyPair keyPair)
 			throws OperatorCreationException, CertificateException {
 		// Generate a self-signed certificate
 		X500Name issuer = new X500Name("CN=localhost");
@@ -77,7 +94,7 @@ public class KeyStoreExample {
 
 		// Use appropriate signature algorithm based on your keyPair algorithm.
 		BouncyCastleProvider bcProvider = new BouncyCastleProvider();
-		ContentSigner contentSigner = new JcaContentSignerBuilder(SIGNATURE_ALG)
+		ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm)
 				.setProvider(bcProvider).build(keyPair.getPrivate());
 
 		X509CertificateHolder certificateHolder = certificateGenerator.build(contentSigner);
@@ -137,15 +154,14 @@ public class KeyStoreExample {
 		KeyPair loadedKeyPair = loadFromKeyStore(keyStore, newKeyStoreFile, keyStorePassword);
 		System.out.println("Key store now has " + keyStore.size() + " entries.");
 
-		if (!Arrays.equals(loadedKeyPair.getPublic().getEncoded(),
-				keyPair.getPublic().getEncoded()) &&
-				!Arrays.equals(loadedKeyPair.getPrivate().getEncoded(),
+		if (!Arrays.equals(loadedKeyPair.getPublic().getEncoded(), keyPair.getPublic().getEncoded())
+				&& !Arrays.equals(loadedKeyPair.getPrivate().getEncoded(),
 						keyPair.getPrivate().getEncoded())) {
 			System.out.println("Loaded key does NOT equal the created key!");
 		} else {
 			System.out.println("Loaded key does equal the created key!");
 		}
-		
+
 		newKeyStoreFile.delete();
 	}
 

@@ -36,8 +36,14 @@ public class AsymmetricEncryptionBytes {
 	public static byte[] decrypt(byte[] encryptedBytes, PrivateKey privateKey)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
+		return decrypt(encryptedBytes, privateKey, CIPHER_ALGORITHM);
+	}
+
+	public static byte[] decrypt(byte[] encryptedBytes, PrivateKey privateKey, String algorithm)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+			IllegalBlockSizeException, BadPaddingException {
 		// Initialize the cipher with the private key and the decryption mode
-		Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+		Cipher cipher = Cipher.getInstance(algorithm);
 		cipher.init(Cipher.DECRYPT_MODE, privateKey);
 
 		// Decrypt the encrypted bytes
@@ -47,8 +53,14 @@ public class AsymmetricEncryptionBytes {
 	public static byte[] encrypt(byte[] inputBytes, Key key)
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 			IllegalBlockSizeException, BadPaddingException {
+		return encrypt(inputBytes, key, CIPHER_ALGORITHM);
+	}
+
+	public static byte[] encrypt(byte[] inputBytes, Key key, String algorithm)
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
+			IllegalBlockSizeException, BadPaddingException {
 		// Initialize the cipher with the public key and the encryption mode
-		Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+		Cipher cipher = Cipher.getInstance(algorithm);
 		cipher.init(Cipher.ENCRYPT_MODE, key);
 
 		// Encrypt the input bytes
@@ -56,7 +68,11 @@ public class AsymmetricEncryptionBytes {
 	}
 
 	public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
-		KeyPairGenerator keyGen = KeyPairGenerator.getInstance(KEY_ALGORITHM);
+		return generateKeyPair(KEY_ALGORITHM);
+	}
+
+	public static KeyPair generateKeyPair(String algorithm) throws NoSuchAlgorithmException {
+		KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm);
 		keyGen.initialize(KEY_SIZE);
 		return keyGen.generateKeyPair();
 	}
