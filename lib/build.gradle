@@ -25,7 +25,9 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation 'com.google.guava:guava:30.1.1-jre'
+	
 	implementation group: 'org.bouncycastle', name: 'bcpkix-jdk18on', version: '1.72'
+	implementation group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '+'
 }
 
 tasks.named('test') {
