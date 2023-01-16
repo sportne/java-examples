@@ -1,17 +1,15 @@
 package my.git.mailmap.gui;
 
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Objects;
 
 import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 
 import my.git.mailmap.Author;
 
-public class AuthorTreeNode implements TransferableNode {
+public class AuthorTreeNode implements MutableTreeNode {
    private final Author author;
    private MutableTreeNode parent;
 
@@ -27,6 +25,16 @@ public class AuthorTreeNode implements TransferableNode {
    @Override
    public Enumeration<? extends TreeNode> children() {
       return Collections.emptyEnumeration();
+   }
+
+   @Override
+   public boolean equals(Object obj) {
+      if (this == obj)
+         return true;
+      if ((obj == null) || (getClass() != obj.getClass()))
+         return false;
+      AuthorTreeNode other = (AuthorTreeNode) obj;
+      return Objects.equals(author, other.author) && Objects.equals(parent, other.parent);
    }
 
    @Override
@@ -59,28 +67,13 @@ public class AuthorTreeNode implements TransferableNode {
    }
 
    @Override
-   public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
-      if (flavor.equals(DataFlavor.stringFlavor)) {
-         return author.toString();
-      } else {
-         throw new UnsupportedFlavorException(flavor);
-      }
-   }
-
-   // Implement the methods of the Transferable interface
-   @Override
-   public DataFlavor[] getTransferDataFlavors() {
-      return new DataFlavor[] { DataFlavor.stringFlavor };
+   public int hashCode() {
+      return Objects.hash(author, parent);
    }
 
    @Override
    public void insert(MutableTreeNode child, int index) {
       throw new UnsupportedOperationException();
-   }
-
-   @Override
-   public boolean isDataFlavorSupported(DataFlavor flavor) {
-      return flavor.equals(DataFlavor.stringFlavor);
    }
 
    @Override
@@ -117,4 +110,5 @@ public class AuthorTreeNode implements TransferableNode {
    public String toString() {
       return author.toString();
    }
+
 }

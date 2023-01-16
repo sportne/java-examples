@@ -1,6 +1,5 @@
 package my.git.mailmap;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,18 +13,16 @@ public class GitRepoUtils {
    /**
     * Retrieves a list of authors from the commit history of a git repository.
     * 
-    * @param gitRepoPath the file path to the root of the git repository on the
-    *                    local filesystem
+    * @param git the git repository on the local filesystem
     * @return a list of Author objects, each representing an author with a name and
     *         email
     * @throws IOException
     * @throws Exception   if an error occurs while reading the repository or
     *                     accessing its commit history
     */
-   public static List<Author> getAuthors(String gitRepoPath) throws IOException {
+   public static List<Author> getAuthors(Git git) throws IOException {
       List<Author> authors = new ArrayList<>();
 
-      Git git = Git.open(new File(gitRepoPath));
       Iterable<RevCommit> commits;
       try {
          commits = git.log().all().call();

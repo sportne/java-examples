@@ -35,6 +35,7 @@ public class MailMapAuthorTreeNode implements MutableTreeNode {
 
    public void addChild(MutableTreeNode child) {
       children.add(child);
+      child.setParent(this);
       children.sort(comparator);
    }
 
@@ -100,6 +101,10 @@ public class MailMapAuthorTreeNode implements MutableTreeNode {
 
    @Override
    public void setParent(MutableTreeNode newParent) {
+      if(parent != null)
+      {
+         removeFromParent();
+      }
       this.parent = newParent;
    }
 

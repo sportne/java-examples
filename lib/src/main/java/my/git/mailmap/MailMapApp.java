@@ -5,6 +5,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,11 +33,12 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
+import org.eclipse.jgit.api.Git;
+
 import my.git.mailmap.gui.AuthorTreeNode;
 import my.git.mailmap.gui.MailMapAuthorTreeNode;
 import my.git.mailmap.gui.MailMapAuthorTreeRoot;
 import my.git.mailmap.gui.SortedListModel;
-import my.git.mailmap.gui.TreeTransferHandler;
 
 public class MailMapApp extends JFrame {
 
@@ -108,7 +110,7 @@ public class MailMapApp extends JFrame {
    /**
     * Collects all entries from the root's children, which are of type
     * {@link MailMapAuthorTreeNode}.
-    * 
+    *
     * @return a list of {@link MailMapEntry} objects representing all entries in
     *         the tree
     */
@@ -133,7 +135,7 @@ public class MailMapApp extends JFrame {
 
    /**
     * Finds the MailMapAuthorTreeNode that corresponds to the given Author.
-    * 
+    *
     * @param author The Author to find the corresponding MailMapAuthorTreeNode for.
     * @return The MailMapAuthorTreeNode that corresponds to the given Author, or
     *         null if none is found.
@@ -188,7 +190,7 @@ public class MailMapApp extends JFrame {
     * a directory containing a git repository. The authors in the repository are
     * read by the GitRepoUtils.getAuthors() method and added to the unassigned
     * authors list.
-    * 
+    *
     * @return an ActionListener that when triggered, opens a JFileChooser to select
     *         a directory containing a git repository.
     */
@@ -200,8 +202,8 @@ public class MailMapApp extends JFrame {
          if (returnVal == JFileChooser.APPROVE_OPTION) {
             try {
                // Use the GitRepoUtils.getAuthors() method to read the selected file
-               List<Author> authors = GitRepoUtils
-                     .getAuthors(fileChooser.getSelectedFile().getAbsolutePath());
+               List<Author> authors = GitRepoUtils.getAuthors(
+                     Git.open(new File(fileChooser.getSelectedFile().getAbsolutePath())));
                // get the models for the two lists of items
                SortedListModel<Author> unassignedModel = (SortedListModel<Author>) (unassignedAuthorsList
                      .getModel());
@@ -225,7 +227,7 @@ public class MailMapApp extends JFrame {
     * This method creates and returns an ActionListener that will load a mailmap
     * file and populate the primaryAuthorsList and unassignedAuthorsList with the
     * primary and alternative authors, respectively.
-    * 
+    *
     * @return an ActionListener for loading mailmap files.
     */
    private ActionListener getMailMapLoaderActionListener() {
@@ -286,7 +288,7 @@ public class MailMapApp extends JFrame {
    /**
     * Returns an ActionListener that saves the current state of the JLists in the
     * application to a file chosen by the user.
-    * 
+    *
     * @return an ActionListener that saves the current state of the JLists in the
     *         application to a file chosen by the user.
     */
@@ -388,7 +390,7 @@ public class MailMapApp extends JFrame {
 
    /**
     * Returns the TreeModel of the mailmapTree.
-    * 
+    *
     * @return the TreeModel of the mailmapTree as a DefaultTreeModel
     */
    private DefaultTreeModel getTreeModel() {
@@ -427,7 +429,7 @@ public class MailMapApp extends JFrame {
    /**
     * Makes the secondary addition to the selected primary author in
     * primaryAuthorsList.
-    * 
+    *
     * @param selectedAuthor        the author to be added as secondary
     * @param selectedPrimaryAuthor the primary author to which the secondary author
     *                              is added
@@ -463,8 +465,6 @@ public class MailMapApp extends JFrame {
       addPrimaryAuthorButton.addActionListener(getPrimaryAuthorButtonActionListener());
       addAlternativeAuthorButton.addActionListener(getAlternativeButtonActionListener());
       removeEntryButton.addActionListener(getRemoveEntryButtonActionListener());
-
-      mailmapTree.setTransferHandler(new TreeTransferHandler());
    }
 
    private void setupLayout() {

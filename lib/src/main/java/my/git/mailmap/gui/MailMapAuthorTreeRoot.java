@@ -1,12 +1,5 @@
 package my.git.mailmap.gui;
 
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
-import java.awt.dnd.DropTargetListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,10 +10,7 @@ import java.util.List;
 import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 
-import my.git.mailmap.Author;
-import my.git.mailmap.MailMapAuthor;
-
-public class MailMapAuthorTreeRoot implements MutableTreeNode, DropTargetListener {
+public class MailMapAuthorTreeRoot implements MutableTreeNode {
 
    private final List<MutableTreeNode> children;
    private final Comparator<MutableTreeNode> comparator = (o1, o2) -> o1.toString()
@@ -32,6 +22,7 @@ public class MailMapAuthorTreeRoot implements MutableTreeNode, DropTargetListene
 
    public void addChild(MutableTreeNode child) {
       children.add(child);
+      child.setParent(this);
       children.sort(comparator);
    }
 
@@ -47,46 +38,6 @@ public class MailMapAuthorTreeRoot implements MutableTreeNode, DropTargetListene
 
    public void clear() {
       children.clear();
-   }
-
-   @Override
-   public void dragEnter(DropTargetDragEvent dtde) {
-      // do nothing
-   }
-
-   @Override
-   public void dragExit(DropTargetEvent dte) {
-      // do nothing
-   }
-
-   @Override
-   public void dragOver(DropTargetDragEvent dtde) {
-      // do nothing
-   }
-
-   @Override
-   public void drop(DropTargetDropEvent dtde) {
-      Transferable transferable = dtde.getTransferable();
-      if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-         try {
-            // Accept the drop and get the dropped data
-            dtde.acceptDrop(DnDConstants.ACTION_MOVE);
-            String data = (String) transferable.getTransferData(DataFlavor.stringFlavor);
-            // Create a new child and add it
-            addChild(new MailMapAuthorTreeNode(new MailMapAuthor(Author.parse(data))));
-         } catch (Exception e) {
-            dtde.rejectDrop();
-         }
-      } else {
-         // Reject the drop if the data flavor is not supported
-         dtde.rejectDrop();
-      }
-
-   }
-
-   @Override
-   public void dropActionChanged(DropTargetDragEvent dtde) {
-      // do nothing
    }
 
    @Override
@@ -159,10 +110,9 @@ public class MailMapAuthorTreeRoot implements MutableTreeNode, DropTargetListene
    public void setUserObject(Object object) {
       // do nothing, there is no user object
    }
-   
+
    @Override
-   public String toString()
-   {
+   public String toString() {
       return "Git Authors";
    }
 
