@@ -1,4 +1,4 @@
-package my.git.mailmap;
+package my.git.mailmap.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -10,8 +10,7 @@ import javax.swing.JList;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
 
-import my.git.mailmap.gui.MailMapAuthorTreeRoot;
-import my.git.mailmap.gui.SortedListModel;
+import my.git.mailmap.Author;
 
 public class ClearData implements ActionListener {
 

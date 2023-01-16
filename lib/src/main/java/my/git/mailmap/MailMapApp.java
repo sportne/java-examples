@@ -23,7 +23,13 @@ import javax.swing.JTree;
 import javax.swing.WindowConstants;
 import javax.swing.tree.DefaultTreeModel;
 
+import my.git.mailmap.gui.AddPrimaryAuthor;
+import my.git.mailmap.gui.AddPseudodym;
+import my.git.mailmap.gui.ClearData;
+import my.git.mailmap.gui.LoadGitRepoAuthors;
+import my.git.mailmap.gui.LoadMailMap;
 import my.git.mailmap.gui.MailMapAuthorTreeRoot;
+import my.git.mailmap.gui.RemoveAuthor;
 import my.git.mailmap.gui.SortedListModel;
 
 public class MailMapApp extends JFrame {

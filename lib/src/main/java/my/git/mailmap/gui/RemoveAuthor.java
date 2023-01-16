@@ -1,4 +1,4 @@
-package my.git.mailmap;
+package my.git.mailmap.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -8,9 +8,7 @@ import javax.swing.JList;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeModel;
 
-import my.git.mailmap.gui.AuthorTreeNode;
-import my.git.mailmap.gui.MailMapAuthorTreeNode;
-import my.git.mailmap.gui.SortedListModel;
+import my.git.mailmap.Author;
 
 public class RemoveAuthor implements ActionListener {
 

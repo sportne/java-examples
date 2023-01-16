@@ -1,4 +1,4 @@
-package my.git.mailmap;
+package my.git.mailmap.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,10 +12,8 @@ import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
-import my.git.mailmap.gui.AuthorTreeNode;
-import my.git.mailmap.gui.MailMapAuthorTreeNode;
-import my.git.mailmap.gui.MailMapAuthorTreeRoot;
-import my.git.mailmap.gui.SortedListModel;
+import my.git.mailmap.Author;
+import my.git.mailmap.MailMapAuthor;
 
 /**
  * The AddPseudodym class is an ActionListener for adding an alternative author

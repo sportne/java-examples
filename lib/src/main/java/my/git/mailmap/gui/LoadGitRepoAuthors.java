@@ -1,4 +1,4 @@
-package my.git.mailmap;
+package my.git.mailmap.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,7 +14,8 @@ import javax.swing.JOptionPane;
 
 import org.eclipse.jgit.api.Git;
 
-import my.git.mailmap.gui.SortedListModel;
+import my.git.mailmap.Author;
+import my.git.mailmap.GitRepoUtils;
 
 public class LoadGitRepoAuthors implements ActionListener {
 

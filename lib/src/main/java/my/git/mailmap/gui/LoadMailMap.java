@@ -1,4 +1,4 @@
-package my.git.mailmap;
+package my.git.mailmap.gui;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -18,10 +18,9 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-import my.git.mailmap.gui.AuthorTreeNode;
-import my.git.mailmap.gui.MailMapAuthorTreeNode;
-import my.git.mailmap.gui.MailMapAuthorTreeRoot;
-import my.git.mailmap.gui.SortedListModel;
+import my.git.mailmap.Author;
+import my.git.mailmap.MailMapAuthor;
+import my.git.mailmap.MailMapEntry;
 
 public class LoadMailMap implements ActionListener {
 
