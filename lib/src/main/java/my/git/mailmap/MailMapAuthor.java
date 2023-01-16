@@ -8,30 +8,30 @@ public class MailMapAuthor {
    private final Author primaryAuthor;
    private final List<Author> alternativeAuthors;
 
-   public MailMapAuthor(String primaryName, String primaryEmail) {
-      this.primaryAuthor = new Author(primaryName, primaryEmail);
-      this.alternativeAuthors = new ArrayList<>();
-   }
-
    public MailMapAuthor(Author primary) {
       this.primaryAuthor = primary;
       this.alternativeAuthors = new ArrayList<>();
    }
 
-   public Author getPrimaryAuthor() {
-      return primaryAuthor;
+   public MailMapAuthor(String primaryName, String primaryEmail) {
+      this.primaryAuthor = new Author(primaryName, primaryEmail);
+      this.alternativeAuthors = new ArrayList<>();
    }
 
-   public List<Author> getAlternativeAuthors() {
-      return alternativeAuthors;
+   public void addAlternativeAuthor(Author alternativeAuthor) {
+      alternativeAuthors.add(alternativeAuthor);
    }
 
    public void addAlternativeAuthor(String name, String email) {
       alternativeAuthors.add(new Author(name, email));
    }
 
-   public void addAlternativeAuthor(Author alternativeAuthor) {
-      alternativeAuthors.add(alternativeAuthor);
+   public List<Author> getAlternativeAuthors() {
+      return alternativeAuthors;
+   }
+
+   public Author getPrimaryAuthor() {
+      return primaryAuthor;
    }
 
    public List<MailMapEntry> toEntries() {
@@ -50,8 +50,7 @@ public class MailMapAuthor {
       StringBuilder builder = new StringBuilder();
       builder.append(primaryAuthor);
       builder.append("\n");
-      for(Author alt : alternativeAuthors)
-      {
+      for (Author alt : alternativeAuthors) {
          builder.append("  ");
          builder.append(alt);
       }

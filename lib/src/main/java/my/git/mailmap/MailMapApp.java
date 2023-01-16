@@ -5,38 +5,24 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.IntStream;
 
 import javax.swing.Box;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.WindowConstants;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.MutableTreeNode;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 
-import org.eclipse.jgit.api.Git;
-
-import my.git.mailmap.gui.AuthorTreeNode;
-import my.git.mailmap.gui.MailMapAuthorTreeNode;
 import my.git.mailmap.gui.MailMapAuthorTreeRoot;
 import my.git.mailmap.gui.SortedListModel;
 
@@ -62,6 +48,7 @@ public class MailMapApp extends JFrame {
    private JButton addPrimaryAuthorButton;
    private JButton addAlternativeAuthorButton;
    private JButton removeEntryButton;
+   private JButton clearButton;
 
    public MailMapApp() {
       // Create JMenuBar - Initializes a new JMenuBar, JMenu, and JMenuItems for file
@@ -93,6 +80,7 @@ public class MailMapApp extends JFrame {
       addPrimaryAuthorButton = new JButton("NEW >>");
       addAlternativeAuthorButton = new JButton("ALT >>");
       removeEntryButton = new JButton("<<");
+      clearButton = new JButton("CLEAR");
 
       // Method call to set up the layout of the components
       setupLayout();
@@ -108,58 +96,6 @@ public class MailMapApp extends JFrame {
    }
 
    /**
-    * Collects all entries from the root's children, which are of type
-    * {@link MailMapAuthorTreeNode}.
-    *
-    * @return a list of {@link MailMapEntry} objects representing all entries in
-    *         the tree
-    */
-   private List<MailMapEntry> collectAllEntries() {
-      // Get the root of the tree
-      MailMapAuthorTreeRoot root = getRoot();
-      // Initialize a list to store all entries
-      List<MailMapEntry> allEntries = new ArrayList<>();
-      // Iterate through the children of the root
-      for (TreeNode node : root.getChildren()) {
-
-         // Check if the child is a MailMapAuthorTreeNode
-         if (node instanceof MailMapAuthorTreeNode) {
-            // If so, add all entries from the MailMapAuthor to the allEntries list
-            allEntries.addAll(((MailMapAuthorTreeNode) node).getMailMapAuthor().toEntries());
-         }
-      }
-
-      // Return the list of all entries
-      return allEntries;
-   }
-
-   /**
-    * Finds the MailMapAuthorTreeNode that corresponds to the given Author.
-    *
-    * @param author The Author to find the corresponding MailMapAuthorTreeNode for.
-    * @return The MailMapAuthorTreeNode that corresponds to the given Author, or
-    *         null if none is found.
-    */
-   private MailMapAuthorTreeNode find(Author author) {
-      // get the root of the tree
-      MailMapAuthorTreeRoot root = getRoot();
-
-      // iterate through the children of the root
-      for (TreeNode node : root.getChildren()) {
-         // check if the current node is a MailMapAuthorTreeNode and if its primary
-         // author matches the given author
-         if ((node instanceof MailMapAuthorTreeNode) && ((MailMapAuthorTreeNode) node)
-               .getMailMapAuthor().getPrimaryAuthor().equals(author)) {
-            // if a match is found, return the node
-            return (MailMapAuthorTreeNode) node;
-         }
-      }
-
-      // if no match is found, return null
-      return null;
-   }
-
-   /**
     * Returns an ActionListener that is responsible for adding an alternative
     * author name to a primary author. The selected author from
     * unassignedAuthorsList will be added as an alternative name to the selected
@@ -170,19 +106,13 @@ public class MailMapApp extends JFrame {
     *         author.
     */
    private ActionListener getAlternativeButtonActionListener() {
-      return e -> {
-         // Retrieve selected author from unassignedAuthorsList
-         Author selectedAuthor = unassignedAuthorsList.getSelectedValue();
-         if (selectedAuthor != null) {
-            MailMapAuthor selectedPrimaryAuthor = getSelectedPrimaryAuthor();
-            if (selectedPrimaryAuthor != null) {
-               makeSecondaryAddition(selectedAuthor, selectedPrimaryAuthor);
-            } else {
-               JOptionPane.showMessageDialog(addAlternativeAuthorButton,
-                     "To add an alternative Author name, a primary author must be selected to add it to.");
-            }
-         }
-      };
+      return new AddPseudodym(unassignedAuthorsList, unassignedAuthorsSet, getRoot(), mailmapTree,
+            getTreeModel(), addAlternativeAuthorButton);
+   }
+
+   private ActionListener getClearButtonActionListener() {
+      return new ClearData(unassignedAuthorsList, unassignedAuthorsSet, getRoot(), getTreeModel(),
+            primaryAuthorSet);
    }
 
    /**
@@ -195,32 +125,8 @@ public class MailMapApp extends JFrame {
     *         a directory containing a git repository.
     */
    private ActionListener getMailMapGitRepoActionListener() {
-      return e -> {
-         JFileChooser fileChooser = new JFileChooser();
-         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-         int returnVal = fileChooser.showOpenDialog(MailMapApp.this);
-         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            try {
-               // Use the GitRepoUtils.getAuthors() method to read the selected file
-               List<Author> authors = GitRepoUtils.getAuthors(
-                     Git.open(new File(fileChooser.getSelectedFile().getAbsolutePath())));
-               // get the models for the two lists of items
-               SortedListModel<Author> unassignedModel = (SortedListModel<Author>) (unassignedAuthorsList
-                     .getModel());
-
-               // check for duplicate authors in the primary model and unassigned model
-               for (Author author : authors) {
-                  if (!primaryAuthorSet.contains(author)
-                        && !unassignedAuthorsSet.contains(author)) {
-                     unassignedModel.addElement(author);
-                     unassignedAuthorsSet.add(author);
-                  }
-               }
-            } catch (IOException ex) {
-               JOptionPane.showMessageDialog(MailMapApp.this, "Error reading git repo.");
-            }
-         }
-      };
+      return new LoadGitRepoAuthors(unassignedAuthorsList, unassignedAuthorsSet, primaryAuthorSet,
+            this);
    }
 
    /**
@@ -231,58 +137,8 @@ public class MailMapApp extends JFrame {
     * @return an ActionListener for loading mailmap files.
     */
    private ActionListener getMailMapLoaderActionListener() {
-      return e -> {
-         JFileChooser fileChooser = new JFileChooser();
-         int returnVal = fileChooser.showOpenDialog(MailMapApp.this);
-         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            try {
-               // Use the MailMapEntry.readMailMap() method to read the selected file
-               List<MailMapEntry> mailMapEntries = MailMapEntry
-                     .readMailMap(fileChooser.getSelectedFile().getAbsolutePath());
-               // Clear the unassignedAuthorsList and primaryAuthorsList
-               SortedListModel<Author> unassignedModel = (SortedListModel<Author>) (unassignedAuthorsList
-                     .getModel());
-               unassignedModel.clear();
-
-               DefaultTreeModel treeModel = (DefaultTreeModel) mailmapTree.getModel();
-               MailMapAuthorTreeRoot root = (MailMapAuthorTreeRoot) treeModel.getRoot();
-               for (MutableTreeNode node : root.getChildren()) {
-                  treeModel.removeNodeFromParent(node);
-               }
-               primaryAuthorSet.clear();
-
-               // Iterate through the mailMapEntries list and add the primary authors to the
-               // primaryAuthorsList and the alternative authors to the unassignedAuthorsList
-               for (MailMapEntry entry : mailMapEntries) {
-                  MailMapAuthorTreeNode treeNode = null;
-                  if (entry.getPrimary() != null) {
-                     if (primaryAuthorSet.contains(entry.getPrimary())) {
-                        if (entry.getSecondary() != null) {
-                           treeNode = find(entry.getPrimary());
-                        }
-                     } else {
-                        treeNode = new MailMapAuthorTreeNode(new MailMapAuthor(entry.getPrimary()),
-                              getRoot());
-                        primaryAuthorSet.add(entry.getPrimary());
-                        treeModel.insertNodeInto(treeNode, root, root.getChildCount());
-                        treeModel.nodesChanged(getRoot(),
-                              IntStream.range(0, getRoot().getChildCount()).toArray());
-                     }
-
-                  }
-                  if (entry.getSecondary() != null) {
-                     treeNode.getMailMapAuthor().addAlternativeAuthor(entry.getSecondary());
-                     treeModel.insertNodeInto(new AuthorTreeNode(entry.getSecondary(), treeNode),
-                           treeNode, treeNode.getChildCount());
-                     treeModel.nodesChanged(treeNode,
-                           IntStream.range(0, treeNode.getChildCount()).toArray());
-                  }
-               }
-            } catch (IOException ex) {
-               JOptionPane.showMessageDialog(MailMapApp.this, "Error reading mailmap file.");
-            }
-         }
-      };
+      return new LoadMailMap(unassignedAuthorsList, unassignedAuthorsSet, getRoot(), mailmapTree,
+            getTreeModel(), primaryAuthorSet, this);
    }
 
    /**
@@ -293,24 +149,7 @@ public class MailMapApp extends JFrame {
     *         application to a file chosen by the user.
     */
    private ActionListener getMailMapWriterActionListener() {
-      return e -> {
-         JFileChooser fileChooser = new JFileChooser();
-         int returnVal = fileChooser.showSaveDialog(MailMapApp.this);
-         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            try {
-               // Update the mailMapEntries list with the current state of the
-               // primaryAuthorsList
-               List<MailMapEntry> mailMapEntries = collectAllEntries();
-
-               // Use the MailMapEntry.writeMailMap() method to save the current state of the
-               // JLists to the selected file
-               MailMapEntry.writeMailMap(fileChooser.getSelectedFile().getAbsolutePath(),
-                     mailMapEntries);
-            } catch (IOException ex) {
-               JOptionPane.showMessageDialog(MailMapApp.this, "Error writing mailmap file.");
-            }
-         }
-      };
+      return new WriteMailMap(this, getRoot());
    }
 
    /**
@@ -321,13 +160,8 @@ public class MailMapApp extends JFrame {
     * @return ActionListener for the primary author button
     */
    private ActionListener getPrimaryAuthorButtonActionListener() {
-      return e -> {
-         // Retrieve selected author from unassignedAuthorsList
-         Author selectedAuthor = unassignedAuthorsList.getSelectedValue();
-         if (selectedAuthor != null) {
-            makePrimaryAddition(selectedAuthor);
-         }
-      };
+      return new AddPrimaryAuthor(unassignedAuthorsList, unassignedAuthorsSet, getRoot(),
+            mailmapTree, getTreeModel(), primaryAuthorSet, this);
    }
 
    /**
@@ -338,26 +172,7 @@ public class MailMapApp extends JFrame {
     * @return ActionListener for the remove entry button
     */
    private ActionListener getRemoveEntryButtonActionListener() {
-      return e -> {
-         Object selectedObj = mailmapTree.getLastSelectedPathComponent();
-         if (selectedObj instanceof AuthorTreeNode) {
-            AuthorTreeNode node = (AuthorTreeNode) selectedObj;
-            getTreeModel().removeNodeFromParent(node);
-            SortedListModel<Author> unassignedModel = (SortedListModel<Author>) (unassignedAuthorsList
-                  .getModel());
-            unassignedModel.addElement(node.getAuthor());
-         } else if (selectedObj instanceof MailMapAuthorTreeNode) {
-            MailMapAuthorTreeNode node = (MailMapAuthorTreeNode) selectedObj;
-            getTreeModel().removeNodeFromParent(node);
-            SortedListModel<Author> unassignedModel = (SortedListModel<Author>) (unassignedAuthorsList
-                  .getModel());
-            unassignedModel.addElement(node.getMailMapAuthor().getPrimaryAuthor());
-            for (Author alt : node.getMailMapAuthor().getAlternativeAuthors()) {
-               unassignedModel.addElement(alt);
-            }
-            primaryAuthorSet.remove(node.getMailMapAuthor().getPrimaryAuthor());
-         }
-      };
+      return new RemoveAuthor(unassignedAuthorsList, mailmapTree, getTreeModel(), primaryAuthorSet);
    }
 
    /**
@@ -370,25 +185,6 @@ public class MailMapApp extends JFrame {
    }
 
    /**
-    * Returns the selected primary author in the MailMapAuthorTree.
-    *
-    * @return the selected primary author, or null if no author is selected
-    */
-   private MailMapAuthor getSelectedPrimaryAuthor() {
-      Object selectedObj = mailmapTree.getLastSelectedPathComponent();
-      if (selectedObj == null) {
-         return null;
-      } else if (selectedObj instanceof AuthorTreeNode) {
-         MailMapAuthorTreeNode node = (MailMapAuthorTreeNode) (((AuthorTreeNode) selectedObj)
-               .getParent());
-         return node.getMailMapAuthor();
-      } else if (selectedObj instanceof MailMapAuthorTreeNode) {
-         return ((MailMapAuthorTreeNode) selectedObj).getMailMapAuthor();
-      }
-      return null;
-   }
-
-   /**
     * Returns the TreeModel of the mailmapTree.
     *
     * @return the TreeModel of the mailmapTree as a DefaultTreeModel
@@ -396,58 +192,6 @@ public class MailMapApp extends JFrame {
    private DefaultTreeModel getTreeModel() {
       // cast the returned TreeModel to a DefaultTreeModel
       return (DefaultTreeModel) mailmapTree.getModel();
-   }
-
-   /**
-    * This method adds an author to the primaryAuthorsList, removes the selected
-    * author from the unassignedAuthorsList and unassignedAuthorsSet and adds it to
-    * the primaryAuthorSet
-    *
-    * @param selectedAuthor the author that is to be added as a primary author
-    */
-   private void makePrimaryAddition(Author selectedAuthor) {
-      // Remove the selected author from the unassignedAuthorsList
-      ((SortedListModel<Author>) (unassignedAuthorsList.getModel())).removeElement(selectedAuthor);
-      unassignedAuthorsSet.remove(selectedAuthor);
-      if (!primaryAuthorSet.contains(selectedAuthor)) {
-         // Add the selected author as a primary author to the primaryAuthorsList
-         MailMapAuthorTreeNode node = new MailMapAuthorTreeNode(new MailMapAuthor(selectedAuthor),
-               getRoot());
-         getTreeModel().insertNodeInto(node, getRoot(), getRoot().getChildCount());
-         getTreeModel().nodesChanged(getRoot(),
-               IntStream.range(0, getRoot().getChildCount()).toArray());
-         if (getRoot().getChildCount() > 0) {
-            mailmapTree.expandPath(new TreePath(new Object[] { getRoot() }));
-         }
-         primaryAuthorSet.add(selectedAuthor);
-      } else {
-         JOptionPane.showMessageDialog(MailMapApp.this,
-               "The selected author already exists as a primary author, removing from the unassigned list.");
-      }
-   }
-
-   /**
-    * Makes the secondary addition to the selected primary author in
-    * primaryAuthorsList.
-    *
-    * @param selectedAuthor        the author to be added as secondary
-    * @param selectedPrimaryAuthor the primary author to which the secondary author
-    *                              is added
-    */
-   private void makeSecondaryAddition(Author selectedAuthor, MailMapAuthor selectedPrimaryAuthor) {
-      // Remove the selected author from the unassignedAuthorsList
-      ((SortedListModel<Author>) (unassignedAuthorsList.getModel())).removeElement(selectedAuthor);
-      unassignedAuthorsSet.remove(selectedAuthor);
-      // Add the selected author as a secondary author to the selected primary author
-      // in primaryAuthorsList
-      selectedPrimaryAuthor.addAlternativeAuthor(selectedAuthor);
-      // Update the selected primary author in primaryAuthorsList
-      MailMapAuthorTreeNode node = find(selectedPrimaryAuthor.getPrimaryAuthor());
-      if (node != null) {
-         getTreeModel().insertNodeInto(new AuthorTreeNode(selectedAuthor, node), node,
-               node.getChildCount());
-         getTreeModel().nodesChanged(node, IntStream.range(0, node.getChildCount()).toArray());
-      }
    }
 
    /**
@@ -465,6 +209,7 @@ public class MailMapApp extends JFrame {
       addPrimaryAuthorButton.addActionListener(getPrimaryAuthorButtonActionListener());
       addAlternativeAuthorButton.addActionListener(getAlternativeButtonActionListener());
       removeEntryButton.addActionListener(getRemoveEntryButtonActionListener());
+      clearButton.addActionListener(getClearButtonActionListener());
    }
 
    private void setupLayout() {
@@ -525,12 +270,17 @@ public class MailMapApp extends JFrame {
       btnPanel.add(removeEntryButton, c);
       c.fill = GridBagConstraints.VERTICAL;
       c.gridx = 0;
-      c.gridy = 4;
-      btnPanel.add(Box.createVerticalGlue(), c);
+      c.gridy = 6;
+      btnPanel.add(Box.createVerticalStrut(10), c);
+      c.fill = GridBagConstraints.HORIZONTAL;
+      c.gridx = 0;
+      c.gridy = 7;
+      btnPanel.add(clearButton, c);
       Insets margin = new Insets(1, 1, 1, 1); // top, left, bottom, right
       addPrimaryAuthorButton.setMargin(margin);
       addAlternativeAuthorButton.setMargin(margin);
       removeEntryButton.setMargin(margin);
+      clearButton.setMargin(margin);
 
       // Create JPanel for JTree
       JPanel treePanel = new JPanel();

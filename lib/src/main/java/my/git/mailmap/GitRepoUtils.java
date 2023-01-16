@@ -12,7 +12,7 @@ public class GitRepoUtils {
 
    /**
     * Retrieves a list of authors from the commit history of a git repository.
-    * 
+    *
     * @param git the git repository on the local filesystem
     * @return a list of Author objects, each representing an author with a name and
     *         email

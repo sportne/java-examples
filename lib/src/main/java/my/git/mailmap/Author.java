@@ -3,7 +3,16 @@ package my.git.mailmap;
 import java.util.Objects;
 
 public class Author {
+   public static Author parse(String authorString) {
+      String[] parts = authorString.split(", ");
+      if (parts.length != 2) {
+         return null;
+      }
+      return new Author(parts[0], parts[1]);
+   }
+
    private final String name;
+
    private final String email;
 
    public Author(String name, String email) {
@@ -37,14 +46,6 @@ public class Author {
    @Override
    public String toString() {
       return name + ", " + email;
-   }
-
-   public static Author parse(String authorString) {
-      String[] parts = authorString.split(", ");
-      if (parts.length != 2) {
-         return null;
-      }
-      return new Author(parts[0], parts[1]);
    }
 
 }

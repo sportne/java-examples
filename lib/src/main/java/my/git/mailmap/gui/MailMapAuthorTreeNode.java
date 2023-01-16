@@ -101,8 +101,7 @@ public class MailMapAuthorTreeNode implements MutableTreeNode {
 
    @Override
    public void setParent(MutableTreeNode newParent) {
-      if(parent != null)
-      {
+      if (parent != null) {
          removeFromParent();
       }
       this.parent = newParent;
