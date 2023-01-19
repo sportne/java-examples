@@ -1,0 +1,21 @@
+#!/bin/bash
+
+##########################################################
+# Make sure the the commit author is in the mailmap file #
+##########################################################
+# Get the author name and email address of the current commit
+author_name=$(git log -1 --pretty=format:"%an")
+author_email=$(git log -1 --pretty=format:"%ae")
+
+# Get the mailmap file for the current repository
+mailmap=$(git config --get-all mailmap.file)
+
+# Check if mailmap file is present
+if [ -f "$mailmap" ]; then
+  # Check if the author name and email address are in the mailmap file
+  if ! grep -Fq "$author_name <$author_email>" $mailmap; then
+      echo "Author name <$author_name> and email address <$author_email> do not match an entry in the mailmap file."
+      echo "Please update the mailmap file before committing."
+      exit 1
+  fi
+fi
