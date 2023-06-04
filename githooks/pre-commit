@@ -19,3 +19,34 @@ if [ -f "$mailmap" ]; then
       exit 1
   fi
 fi
+
+
+# prevent files too large or that are non-text from being committed
+# set split as line breaks to avoid issues with whitespace
+IFS='
+'
+
+shouldFail=false
+for file in $( git diff-index --cached --diff-filter=d --name-only HEAD); do
+  # skip directories (git submodules) and files that already exist in the repo
+  if [[ -f "$file" ]] && [[ -n $(git diff --cached --name-only --diff-filter=A "$file") ]]; then
+  
+    # Check if the file is not a plain text file
+    if ! [[ -n $(git grep -I --name-only --untracked -e . -- "$file") ]]; then
+      echo "$file appears to be a binary file and probably shouldn't be commited."
+      shouldFail=true
+    fi
+    
+    # Check if the file is larger than 100 KB
+    file_size=$(ls -lan $file | awk '{ print $5 }')
+    if [[ file_size -gt 100000 ]]; then
+      echo "$file is over 100 KB ($file_size bytes) and probably shouldn't be committed."
+      shouldFail=true
+    fi
+  fi
+done
+
+if $shouldFail; then
+  echo && echo "If you really need to commit the referenced files then use the --no-verify switch."
+  exit 1;
+fi
